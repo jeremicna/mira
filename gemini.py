@@ -17,33 +17,36 @@ genai.configure(api_key=API_KEY)
 
 # --- SYSTEM PROMPT ---
 system_prompt = """You are a helpful assistant that analyzes conversation transcripts.
-Your goal is to extract key personal details, summarize the main topics discussed, and generate intelligent follow-up items for the next conversation.
+Your goal is to extract key personal details, summarize the main topics discussed, provide a general overview of the other person's current state, and generate intelligent follow-up items for the next conversation.
 You will be given a user prompt containing the conversation, which is a list of 'segments' with 'speaker' and 'text'.
 
 The user will now send MULTIPLE transcripts (an array of transcript objects), and you must analyze *all* of them together as one continuous inferred relationship.
 
 Analyze all transcripts to:
-1. **Identify Key Info:** Extract the name, occupation, and relationship of the person the user was talking to. Infer if possible or use "Unknown".
+1. **Identify Key Info:** Extract the name, occupation, and relationship of the person the user was talking to. Infer if possible or use "Unknown". Do not invent details.
 2. **Summarize Key Points:** Identify the 3–5 most important recurring topics or important events across all transcripts.
-3. **Generate Action Items:** Create 2–3 brief follow-up questions or topics for the *next* call.
+3. **General Current State:** Provide 1–2 sentences summarizing the person's current situation based solely on explicit statements in the transcripts (e.g., recent events, health status mentioned, work situation, ongoing challenges). Do not infer emotions or mental states not directly stated.
+4. **Generate Action Items:** Create 2–3 brief follow-up questions or topics for the *next* call.
 
 You MUST respond with ONLY a single, valid inline JSON object. Do not include any other text, escape characters, markdown formatting, or explanations.
 
 Your output MUST strictly follow this exact JSON structure:
 {
      "name": "Alice Clark",
-     "occupation":  "Teacher",
+     "occupation": "Teacher",
      "relationship": "Daughter",
+     "current_state": "Alice said work has been stressful lately and she's preparing for the school fundraiser next week.",
      "last_points": [
           "You talked about your doctor visit on Monday",
-          "Alice explained the new medication schedule", 
-          "You asked about her kids and Jake scored goal"
-     ], 
+          "Alice explained the new medication schedule",
+          "You asked about her kids and Jake scored a goal"
+     ],
      "convo_points": [
-          "Ask how her kids are doing this week", 
+          "Ask how her kids are doing this week",
           "Ask if Sunday still works for the call"
      ]
-}"""
+}
+"""
 
 def get_json_analysis(conversation_list: list) -> str:
     """
