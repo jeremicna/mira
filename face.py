@@ -11,11 +11,11 @@ import time
 RTSP_URL = "rtsp://localhost:8554/mystream"
 API_URL = "http://localhost:8000/api/face"
 KNOWN_FACES_FILE = "known_faces.json"
-CONFIDENCE_THRESHOLD = 70  # Lower = stricter matching for LBPH (typical range: 50-100)
+CONFIDENCE_THRESHOLD = 90  # Lower = stricter matching for LBPH (typical range: 50-100)
 FRAME_SKIP = 2   # Process every Nth frame for performance
 BUFFER_DURATION = 5.0  # seconds - how long to track before confirming face change
 FPS_ESTIMATE = 30  # Estimated FPS for buffer size calculation
-FACE_CHANGE_CONFIRMATION_TIME = 4.0  # seconds - how long new face must be stable before confirming
+FACE_CHANGE_CONFIRMATION_TIME = 2.0  # seconds - how long new face must be stable before confirming
 
 class FaceTracker:
     def __init__(self):
