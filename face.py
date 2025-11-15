@@ -9,9 +9,9 @@ import time
 
 # Configuration
 RTSP_URL = "rtsp://localhost:8554/mystream"
-API_URL = "http://localhost:5000/api/face"
+API_URL = "http://localhost:8000/api/face"
 KNOWN_FACES_FILE = "known_faces.json"
-SIMILARITY_THRESHOLD = 0.9  # Higher = stricter matching (cosine similarity)
+SIMILARITY_THRESHOLD = 0.80  # Higher = stricter matching (cosine similarity)
 FRAME_SKIP = 2   # Process every Nth frame for performance
 BUFFER_DURATION = 3.0  # seconds - how long to track before confirming face change
 FPS_ESTIMATE = 30  # Estimated FPS for buffer size calculation

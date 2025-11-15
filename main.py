@@ -102,13 +102,13 @@ def process_audio_capture(start_ts, end_ts, face_id):
     else:
         print("Transcription failed")
 
-    # Store in leveldb
+    # Store in rocksdb
 
     # Gemini
 
-    # Store in leveldb
+    # Store in rocksdb
 
 
 if __name__ == "__main__":
     print("Starting audio tap…")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=8000)
