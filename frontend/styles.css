@@ -1,3 +1,18 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  background: #000;
+  overflow: hidden;
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
 #bg-video {
   position: fixed;
   top: 0;
@@ -7,10 +22,146 @@
   object-fit: cover;
   z-index: -1;
 }
+
 #glasselement {
   width: 200px;
   height: 200px;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+#unmute-button {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#unmute-button:hover {
+  background: rgba(0, 0, 0, 0.65);
+  transform: scale(1.02);
+}
+
+.glass-container {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  padding: 40px;
+  min-width: 420px;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Identity Section */
+.identity-section {
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.name {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.subinfo {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: -0.2px;
+}
+
+.separator {
+  margin: 0 8px;
+  opacity: 0.4;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 12px;
+}
+
+/* Current State Section */
+.current-state-section {
+  margin-bottom: 24px;
+}
+
+.current-text {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Last Points Section */
+.last-points-section {
+  margin-bottom: 24px;
+}
+
+.last-points-list {
+  list-style: none;
+}
+
+.last-points-list li {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 8px 0 8px 20px;
+  position: relative;
+}
+
+.last-points-list li::before {
+  content: "•";
+  position: absolute;
+  left: 6px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 16px;
+}
+
+/* Suggested Talking Points Section */
+.convo-points-section {
+  margin-bottom: 0;
+}
+
+.convo-points-list {
+  list-style: none;
+}
+
+.convo-points-list li {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 8px 0 8px 20px;
+  position: relative;
+}
+
+.convo-points-list li::before {
+  content: "→";
+  position: absolute;
+  left: 4px;
+  color: #41dc8e;
+  font-size: 14px;
+  font-weight: 600;
 }
