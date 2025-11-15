@@ -7,9 +7,10 @@ from lemonfox import get_transcription_json
 from db import lmdb_get_json, lmdb_put_json
 from gemini import get_json_analysis
 import json
-
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 audio = AudioTap(
     url="rtsp://localhost:8554/mystream",
