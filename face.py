@@ -4,21 +4,29 @@ import uuid
 import requests
 import json
 import os
-from collections import deque
+from collections import deque, Counter
+import time
 
 # Configuration
 RTSP_URL = "rtsp://localhost:8554/mystream"
 API_URL = "http://localhost:5000/api/face"
 KNOWN_FACES_FILE = "known_faces.json"
-SIMILARITY_THRESHOLD = 0.8  # Higher = stricter matching (cosine similarity)
+SIMILARITY_THRESHOLD = 0.85  # Higher = stricter matching (cosine similarity)
 FRAME_SKIP = 2   # Process every Nth frame for performance
+BUFFER_DURATION = 2.0  # seconds - how long to track before confirming face change
+FPS_ESTIMATE = 30  # Estimated FPS for buffer size calculation
 
 class FaceTracker:
     def __init__(self):
         self.known_face_encodings = []
         self.known_face_ids = []
         self.current_face_uuid = None
-        self.frame_buffer = deque(maxlen=10)  # Track last 10 detections
+        
+        # Calculate buffer size based on FPS and desired duration
+        buffer_size = int(FPS_ESTIMATE * BUFFER_DURATION / FRAME_SKIP)
+        self.frame_buffer = deque(maxlen=buffer_size)
+        
+        self.last_face_change_time = time.time()
         
         # Load OpenCV's DNN face detector
         model_path = "deploy.prototxt"
@@ -30,6 +38,8 @@ class FaceTracker:
         self.detector = cv2.dnn.readNetFromCaffe(model_path, weights_path)
         
         self.load_known_faces()
+        
+        print(f"Face tracker initialized with {buffer_size}-frame buffer (~{BUFFER_DURATION}s)")
     
     def download_models(self, model_path, weights_path):
         """Download face detection models if needed"""
@@ -90,6 +100,7 @@ class FaceTracker:
             self.known_face_encodings.append(face_hist)
             self.known_face_ids.append(face_uuid)
             self.save_known_faces()
+            print(f"New face registered: {face_uuid}")
             return face_uuid
         
         # Compare with known faces
@@ -104,13 +115,15 @@ class FaceTracker:
         
         if best_similarity >= SIMILARITY_THRESHOLD:
             # Found a match
-            return self.known_face_ids[best_match_idx]
+            face_uuid = self.known_face_ids[best_match_idx]
+            return face_uuid
         else:
             # New face
             face_uuid = str(uuid.uuid4())
             self.known_face_encodings.append(face_hist)
             self.known_face_ids.append(face_uuid)
             self.save_known_faces()
+            print(f"New face registered: {face_uuid} (best similarity: {best_similarity:.3f})")
             return face_uuid
     
     def post_face_change(self, face_uuid):
@@ -124,6 +137,31 @@ class FaceTracker:
             print(f"API Response: {response.json()}")
         except Exception as e:
             print(f"Error posting to API: {e}")
+    
+    def get_stable_face(self):
+        """
+        Get the most common face UUID from the buffer.
+        Requires majority consensus (>50%) to confirm face change.
+        """
+        if len(self.frame_buffer) == 0:
+            return None
+        
+        # Count occurrences of each UUID
+        face_counts = Counter(self.frame_buffer)
+        
+        # Get most common face
+        most_common_face, count = face_counts.most_common(1)[0]
+        
+        # Require majority (>50%) for confirmation
+        buffer_size = len(self.frame_buffer)
+        confidence = count / buffer_size
+        
+        # Only return if we have majority consensus
+        if confidence > 0.5:
+            return most_common_face
+        
+        # If no consensus, return current face to avoid flickering
+        return self.current_face_uuid
     
     def process_frame(self, frame):
         """Detect and identify faces in frame"""
@@ -166,23 +204,25 @@ class FaceTracker:
                     detected_uuid = self.identify_face(face_img)
                     break  # Use first (most confident) face
         
-        # Add to buffer for stability
+        # Add to buffer for temporal stability
         self.frame_buffer.append(detected_uuid)
         
-        # Use majority vote from buffer to avoid flicker
-        if len(self.frame_buffer) >= 5:
-            face_counts = {}
-            for f in self.frame_buffer:
-                face_counts[f] = face_counts.get(f, 0) + 1
-            stable_uuid = max(face_counts, key=face_counts.get)
-        else:
-            stable_uuid = detected_uuid
+        # Get stable face based on buffer consensus
+        stable_uuid = self.get_stable_face()
         
-        # Check if face changed
+        # Check if face changed with temporal confirmation
+        current_time = time.time()
         if stable_uuid != self.current_face_uuid:
-            print(f"Face change: {self.current_face_uuid} -> {stable_uuid}")
-            self.current_face_uuid = stable_uuid
-            self.post_face_change(stable_uuid)
+            # Only trigger change if buffer is full (we've seen enough frames)
+            if len(self.frame_buffer) >= self.frame_buffer.maxlen * 0.8:
+                time_since_last_change = current_time - self.last_face_change_time
+                
+                print(f"Face change detected: {self.current_face_uuid} -> {stable_uuid}")
+                print(f"  Buffer consensus: {self.frame_buffer.count(stable_uuid)}/{len(self.frame_buffer)} frames")
+                
+                self.current_face_uuid = stable_uuid
+                self.last_face_change_time = current_time
+                self.post_face_change(stable_uuid)
         
         return face_locations
 
@@ -221,6 +261,11 @@ def main():
             """
             for (startX, startY, endX, endY) in face_locations:
                 cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                # Display current face UUID
+                if tracker.current_face_uuid:
+                    label = tracker.current_face_uuid[:8]
+                    cv2.putText(frame, label, (startX, startY - 10),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             
             cv2.imshow('Face Detection', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
