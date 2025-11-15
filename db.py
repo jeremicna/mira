@@ -54,7 +54,7 @@ if __name__ == "__main__":
             # Try parsing JSON
             try:
                 parsed = json.loads(raw)
-                print(json.dumps(parsed, indent=2))
+                print(json.dumps(parsed))
             except Exception:
                 print(raw)
 

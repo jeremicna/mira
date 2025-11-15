@@ -6,6 +6,7 @@ from audiotap import AudioTap
 from lemonfox import get_transcription_json
 from db import lmdb_get_json, lmdb_put_json
 from gemini import get_json_analysis
+import json
 
 
 app = Flask(__name__)
@@ -21,6 +22,33 @@ audio.start()
 CURRENT_FACE = None
 FACE_START_TIME = None
 LOCK = threading.Lock()
+
+
+@app.get("/api/state")
+def get_state():
+    """Return current face visibility state and whether Gemini data exists."""
+    global CURRENT_FACE
+
+    with LOCK:
+        active_face = CURRENT_FACE
+
+    if active_face is None:
+        return jsonify({
+            "active_face": None,
+            "has_gemini": False,
+            "gemini": None
+        })
+
+    # Look up Gemini analysis for the active face
+    analysis_key = f"gemini:{active_face}"
+    gemini_data = lmdb_get_json(analysis_key)
+
+    return jsonify({
+        "active_face": active_face,
+        "has_gemini": gemini_data is not None,
+        "gemini": gemini_data
+    })
+
 
 
 @app.post("/api/face")
@@ -95,7 +123,7 @@ def process_audio_capture(start_ts, end_ts, face_id):
         print("WARN: Not enough audio in buffer.")
         return
 
-    mp3_path = f"capture_{face_id}_{int(start_ts)}.mp3"
+    mp3_path = f"audio/capture_{face_id}_{int(start_ts)}.mp3"
     audio.save_mp3(pcm, mp3_path)
     print(f"Saved MP3: {mp3_path}")
 
@@ -116,7 +144,17 @@ def process_audio_capture(start_ts, end_ts, face_id):
     lmdb_put_json(trans_key, existing_list)
     print(f"LMDB updated: {trans_key} now has {len(existing_list)} chunks")
 
-    analysis_json = get_json_analysis(existing_list)
+    analysis_raw = get_json_analysis(existing_list)
+
+    # Ensure we store a real dict, not a JSON string
+    if isinstance(analysis_raw, str):
+        try:
+            analysis_json = json.loads(analysis_raw)
+        except Exception:
+            print("ERROR: Gemini returned invalid JSON")
+            analysis_json = None
+    else:
+        analysis_json = analysis_raw
 
     analysis_key = f"gemini:{face_id}"
     lmdb_put_json(analysis_key, analysis_json)

@@ -27,7 +27,7 @@ Analyze all transcripts to:
 2. **Summarize Key Points:** Identify the 3–5 most important recurring topics or important events across all transcripts.
 3. **Generate Action Items:** Create 2–3 brief follow-up questions or topics for the *next* call.
 
-You MUST respond with ONLY a single, valid JSON object. Do not include any other text, markdown formatting, or explanations.
+You MUST respond with ONLY a single, valid inline JSON object. Do not include any other text, escape characters, markdown formatting, or explanations.
 
 Your output MUST strictly follow this exact JSON structure:
 {
