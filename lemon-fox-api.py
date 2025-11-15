@@ -39,7 +39,6 @@ except FileNotFoundError:
 
 if response.status_code != 200:
     print(f"Error: API request failed with status code {response.status_code}")
-    print("Response:", response.text)
     sys.exit(1)
 
 raw = response.json()
@@ -48,7 +47,6 @@ raw = response.json()
 segments = raw.get("segments", []) or []
 
 result = {
-    "text": raw.get("text"),
     "segments": [
         {
             "speaker": seg.get("speaker", "unknown"),
