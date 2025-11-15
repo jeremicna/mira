@@ -1,75 +1,64 @@
-# transcription_store.py
-
+import lmdb
 import json
-import lvldb
+import os
 
-DB_PATH = "transcriptions.ldb"
+LMDB_PATH = "./database"
+os.makedirs(LMDB_PATH, exist_ok=True)
 
-# Open LevelDB once, globally
-db = lvldb.DB(DB_PATH, create_if_missing=True)
-
-
-def _load_json_list(raw_value):
-    if raw_value is None:
-        return []
-
-    # lvldb can give you bytes or str depending on usage
-    if isinstance(raw_value, bytes):
-        text = raw_value.decode("utf-8")
-    else:
-        text = raw_value
-
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        # If the value is corrupted or not a list, reset
-        return []
-
-    if isinstance(data, list):
-        return data
-
-    # If someone stored a single object before, wrap it
-    return [data]
+env = lmdb.open(
+    LMDB_PATH,
+    map_size=1024 * 1024 * 1024,   # 1GB
+    max_dbs=1,
+    lock=True
+)
 
 
-def append_transcription(uuid_str: str, transcription: dict) -> None:
-    """
-    Append one transcription dict to the list stored at key 'transcriptions:<uuid>'.
-
-    - Keeps chronological order by always appending at the end
-    - Serializes as JSON array
-    """
-
-    key = f"transcriptions:{uuid_str}"
-
-    existing = db.get(key)
-    conversations = _load_json_list(existing)
-
-    conversations.append(transcription)
-
-    db.put(key, json.dumps(conversations, ensure_ascii=False).encode("utf-8"))
+# ----------------------------------------
+# LMDB HELPERS
+# ----------------------------------------
+def lmdb_get_json(key: str):
+    """Return parsed JSON stored at key or None."""
+    with env.begin() as txn:
+        raw = txn.get(key.encode())
+        if not raw:
+            return None
+        try:
+            return json.loads(raw.decode())
+        except:
+            return None
 
 
-def get_transcriptions(uuid_str: str):
-    """
-    Return the list of transcriptions for this uuid.
-    Empty list if none.
-    """
-    key = f"transcriptions:{uuid_str}"
-    raw = db.get(key)
-    return _load_json_list(raw)
+def lmdb_put_json(key: str, value):
+    """Store value (dict/list) as JSON."""
+    with env.begin(write=True) as txn:
+        txn.put(key.encode(), json.dumps(value).encode())
 
 
-def delete_transcriptions(uuid_str: str):
-    """
-    Delete all stored transcriptions for this uuid.
-    """
-    key = f"transcriptions:{uuid_str}"
-    db.delete(key)
+if __name__ == "__main__":
+    print("\n=== LMDB FULL DUMP ===")
 
+    with env.begin() as txn:
+        cursor = txn.cursor()
+        found_any = False
 
-def close_db():
-    """
-    Call this on clean shutdown if you want.
-    """
-    db.close()
+        for key_bytes, val_bytes in cursor:
+            found_any = True
+            key = key_bytes.decode()
+
+            print("\n--------------------------------------")
+            print(f"KEY: {key}")
+            print("--------------------------------------")
+
+            raw = val_bytes.decode()
+
+            # Try parsing JSON
+            try:
+                parsed = json.loads(raw)
+                print(json.dumps(parsed, indent=2))
+            except Exception:
+                print(raw)
+
+        if not found_any:
+            print("LMDB is empty.")
+
+    print("\n=== END ===\n")

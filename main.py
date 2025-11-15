@@ -4,6 +4,9 @@ import threading
 from flask import Flask, request, jsonify
 from audiotap import AudioTap
 from lemonfox import get_transcription_json
+from db import lmdb_get_json, lmdb_put_json
+from gemini import get_json_analysis
+
 
 app = Flask(__name__)
 
@@ -102,11 +105,23 @@ def process_audio_capture(start_ts, end_ts, face_id):
     else:
         print("Transcription failed")
 
-    # Store in rocksdb
+    trans_key = f"transcriptions:{face_id}"
 
-    # Gemini
+    existing_list = lmdb_get_json(trans_key)
+    if existing_list is None:
+        existing_list = []
 
-    # Store in rocksdb
+    existing_list.append(result)
+
+    lmdb_put_json(trans_key, existing_list)
+    print(f"LMDB updated: {trans_key} now has {len(existing_list)} chunks")
+
+    analysis_json = get_json_analysis(existing_list)
+
+    analysis_key = f"gemini:{face_id}"
+    lmdb_put_json(analysis_key, analysis_json)
+
+    print(f"Analysis stored: {analysis_key}")
 
 
 if __name__ == "__main__":
