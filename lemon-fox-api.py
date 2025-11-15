@@ -3,7 +3,6 @@ import sys
 import os
 import json
 from dotenv import load_dotenv
-
 load_dotenv()
 
 API_KEY = os.getenv("LEMON_FOX_API_KEY")
@@ -53,8 +52,6 @@ result = {
     "segments": [
         {
             "speaker": seg.get("speaker", "unknown"),
-            "start": seg.get("start"),
-            "end": seg.get("end"),
             "text": seg.get("text"),
         }
         for seg in segments
@@ -63,7 +60,6 @@ result = {
 
 # Debug: show what speakers the API actually gave you
 speakers_from_api = sorted({seg["speaker"] for seg in result["segments"] if seg.get("speaker")})
-print("Speakers from API:", speakers_from_api, file=sys.stderr)
 
 # Fallback: if API insists on one speaker, but you know there are two,
 # alternate speaker labels across segments so the rest of your pipeline works
