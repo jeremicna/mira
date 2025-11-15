@@ -1,19 +1,23 @@
 async function getState() {
-    try {
-        const res = await fetch("http://localhost:8000/api/state");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        return data;
-    } catch (err) {
-        console.error("Failed to fetch state:", err);
-        return null;
-    }
+  try {
+    const res = await fetch("http://localhost:8000/api/state");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch state:", err);
+    return null;
+  }
 }
 
 function renderEmptyState() {
-    const el = document.getElementById("glasselement");
+  const el = document.getElementById("glasselement");
 
-    el.innerHTML = `
+  // 🔑 shrink mode
+  el.classList.remove("full");
+  el.classList.add("empty");
+
+  el.innerHTML = `
         <div class="glass-container empty">
             <div class="empty-message">
                 No active face detected.
@@ -23,11 +27,14 @@ function renderEmptyState() {
 }
 
 function renderFullState(state) {
-    const el = document.getElementById("glasselement");
+  const el = document.getElementById("glasselement");
+  const g = state.gemini;
 
-    const g = state.gemini;  // shortcut
+  // 🔑 full-size mode
+  el.classList.remove("empty");
+  el.classList.add("full");
 
-    el.innerHTML = `
+  el.innerHTML = `
       <div class="glass-container">
 
         <div class="identity-section">
@@ -47,14 +54,14 @@ function renderFullState(state) {
         <div class="last-points-section">
           <div class="section-title">Last Points</div>
           <ul class="last-points-list">
-            ${g.last_points.map(x => `<li>${x}</li>`).join("")}
+            ${g.last_points.map((x) => `<li>${x}</li>`).join("")}
           </ul>
         </div>
 
         <div class="convo-points-section">
           <div class="section-title">Suggested Talking Points</div>
           <ul class="convo-points-list">
-            ${g.convo_points.map(x => `<li>${x}</li>`).join("")}
+            ${g.convo_points.map((x) => `<li>${x}</li>`).join("")}
           </ul>
         </div>
 
@@ -62,29 +69,26 @@ function renderFullState(state) {
     `;
 }
 
-
 function renderBasedOnState(state) {
-    if (!state) return;
+  if (!state) return;
 
-    const isFull =
-        state.active_face !== null &&
-        state.has_gemini === true;
+  const isFull = state.active_face !== null && state.has_gemini === true;
 
-    if (isFull) {
-        renderFullState(state);
-    } else {
-        renderEmptyState();
-    }
+  if (isFull) {
+    renderFullState(state);
+  } else {
+    renderEmptyState();
+  }
 }
 
 async function main() {
-    while (true) {
-        const state = await getState();
-        console.log("STATE:", state);
+  while (true) {
+    const state = await getState();
+    console.log("STATE:", state);
 
-        renderBasedOnState(state);
-        await new Promise(resolve => setTimeout(resolve, 200));
-    }
+    renderBasedOnState(state);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
 }
 
 main();
