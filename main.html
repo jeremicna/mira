@@ -1,0 +1,54 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-R">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <video id="bg-video" class="background-video" autoplay playsinline muted></video>
+    
+    <button id="unmute-button" style="position: absolute; top: 20px; left: 20px; z-index: 100;">
+        Click to Unmute
+    </button>
+    
+    <script>
+        const video = document.getElementById('bg-video');
+        const unmuteButton = document.getElementById('unmute-button');
+        const pc = new RTCPeerConnection();
+        
+        pc.ontrack = (event) => {
+            video.srcObject = event.streams[0];
+            video.play().catch(e => console.error("Play failed:", e));
+        };
+        
+        pc.addTransceiver('video', { direction: 'recvonly' });
+        pc.addTransceiver('audio', { direction: 'recvonly' });
+        
+        pc.createOffer().then((offer) => {
+            pc.setLocalDescription(offer);
+            
+            return fetch('http://localhost:8889/mystream/whep', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/sdp' },
+                body: offer.sdp
+            });
+        }).then((res) => res.text())
+        .then((answer) => {
+            pc.setRemoteDescription(new RTCSessionDescription({
+                type: 'answer',
+                sdp: answer
+            }));
+        }).catch(console.error);
+
+        unmuteButton.addEventListener('click', () => {
+            video.muted = false;
+            unmuteButton.style.display = 'none';
+        });
+    </script>
+
+    <div>
+        </div>
+</body>
+<script src="liquid-glass.js"></script>
+</html>
