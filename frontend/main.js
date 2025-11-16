@@ -13,7 +13,6 @@ async function getState() {
 function renderEmptyState() {
   const el = document.getElementById("glasselement");
 
-  // 🔑 shrink mode
   el.classList.remove("full");
   el.classList.add("empty");
 
@@ -27,7 +26,6 @@ function renderFullState(state) {
   const el = document.getElementById("glasselement");
   const g = state.gemini;
 
-  // 🔑 full-size mode
   el.classList.remove("empty");
   el.classList.add("full");
 

@@ -12,10 +12,6 @@ env = lmdb.open(
     lock=True
 )
 
-
-# ----------------------------------------
-# LMDB HELPERS
-# ----------------------------------------
 def lmdb_get_json(key: str):
     """Return parsed JSON stored at key or None."""
     with env.begin() as txn:
@@ -51,7 +47,6 @@ if __name__ == "__main__":
 
             raw = val_bytes.decode()
 
-            # Try parsing JSON
             try:
                 parsed = json.loads(raw)
                 print(json.dumps(parsed))

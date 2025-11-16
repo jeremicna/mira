@@ -19,7 +19,6 @@ FACE_CHANGE_CONFIRMATION_TIME = 2.0  # seconds - how long new face must be stabl
 
 class FaceTracker:
     def __init__(self):
-        # OpenCV LBPH Face Recognizer
         self.recognizer = cv2.face.LBPHFaceRecognizer_create(
             radius=2,
             neighbors=8,
@@ -28,7 +27,7 @@ class FaceTracker:
         )
         
         self.known_face_ids = []
-        self.known_face_images = []  # Store sample images for retraining
+        self.known_face_images = []
         self.trained = False
         self.current_face_uuid = None
 
@@ -36,13 +35,11 @@ class FaceTracker:
         self.frame_buffer = deque(maxlen=buffer_size)
 
         self.last_face_change_time = time.time()
-        self.last_unknown_face = None  # store image for possible registration
+        self.last_unknown_face = None
         
-        # New: tracking for face change confirmation
         self.pending_face_uuid = None
         self.pending_face_start_time = None
 
-        # Load OpenCV DNN face detector
         model_path = "deploy.prototxt"
         weights_path = "res10_300x300_ssd_iter_140000.caffemodel"
 
@@ -84,7 +81,6 @@ class FaceTracker:
                 
                 for face_data in data['faces']:
                     face_id = face_data['id']
-                    # Decode base64 images back to numpy arrays
                     for img_base64 in face_data['images']:
                         img_bytes = np.frombuffer(
                             bytes.fromhex(img_base64),
@@ -95,7 +91,6 @@ class FaceTracker:
                         self.known_face_ids.append(face_id)
                         self.known_face_images.append(img)
                 
-                # Train the recognizer
                 if len(self.known_face_images) > 0:
                     label_mapping = {id_: idx for idx, id_ in enumerate(set(self.known_face_ids))}
                     labels = [label_mapping[id_] for id_ in self.known_face_ids]
@@ -114,18 +109,15 @@ class FaceTracker:
 
     def save_known_faces(self):
         """Save known faces with their training images"""
-        # Group images by UUID
         face_dict = {}
         for face_id, img in zip(self.known_face_ids, self.known_face_images):
             if face_id not in face_dict:
                 face_dict[face_id] = []
             
-            # Encode image to hex string for JSON storage
             _, img_encoded = cv2.imencode('.jpg', img)
             img_hex = img_encoded.tobytes().hex()
             face_dict[face_id].append(img_hex)
         
-        # Create faces list
         faces_list = [
             {'id': face_id, 'images': images}
             for face_id, images in face_dict.items()
@@ -139,9 +131,7 @@ class FaceTracker:
     def preprocess_face(self, face_img):
         """Preprocess face for recognition"""
         gray = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
-        # Resize to consistent size
         gray = cv2.resize(gray, (128, 128))
-        # Histogram equalization for better lighting invariance
         gray = cv2.equalizeHist(gray)
         return gray
 
@@ -156,8 +146,6 @@ class FaceTracker:
         try:
             label, confidence = self.recognizer.predict(gray)
             
-            # LBPH: Lower confidence = better match
-            # Typical good matches are < 50, anything > 100 is usually different person
             if confidence < CONFIDENCE_THRESHOLD:
                 face_uuid = self.label_to_uuid[label]
                 print(f"Recognized face: {face_uuid} (confidence: {confidence:.1f})")
@@ -177,11 +165,9 @@ class FaceTracker:
         face_uuid = str(uuid.uuid4())
         gray = self.preprocess_face(face_img)
         
-        # Add the new face
         self.known_face_ids.append(face_uuid)
         self.known_face_images.append(gray)
         
-        # Retrain the recognizer with all faces
         label_mapping = {id_: idx for idx, id_ in enumerate(set(self.known_face_ids))}
         labels = [label_mapping[id_] for id_ in self.known_face_ids]
         
@@ -194,19 +180,16 @@ class FaceTracker:
         return face_uuid
 
     def add_training_sample(self, face_uuid, face_img):
-        """Add additional training sample for existing face"""
         gray = self.preprocess_face(face_img)
         
         self.known_face_ids.append(face_uuid)
         self.known_face_images.append(gray)
         
-        # Retrain
         label_mapping = {id_: idx for idx, id_ in enumerate(set(self.known_face_ids))}
         labels = [label_mapping[id_] for id_ in self.known_face_ids]
         
         self.recognizer.update([gray], np.array([label_mapping[face_uuid]]))
         
-        # Save periodically (every 5 samples)
         if len(self.known_face_images) % 5 == 0:
             self.save_known_faces()
             print(f"Added training sample for {face_uuid}")
@@ -272,18 +255,14 @@ class FaceTracker:
                 if face_img.size > 0:
                     detected_uuid = self.identify_face(face_img)
                     
-                    # Add training samples for known faces to improve recognition
                     if detected_uuid != "UNKNOWN" and detected_uuid is not None:
-                        # Randomly collect additional samples (1 in 30 frames)
                         if np.random.random() < 0.03:
                             self.add_training_sample(detected_uuid, face_img)
                     
                     break
 
-        # Add detection to buffer
         self.frame_buffer.append(detected_uuid)
 
-        # CONSENSUS: decide whether UNKNOWN becomes a new UUID
         if detected_uuid == "UNKNOWN":
             unknown_count = self.frame_buffer.count("UNKNOWN")
             required_frames = int(self.frame_buffer.maxlen * 0.8)
@@ -295,23 +274,18 @@ class FaceTracker:
                     print(f"[CONSENSUS] UNKNOWN confirmed ({unknown_count}/{len(self.frame_buffer)})")
                     detected_uuid = self.register_new_face(self.last_unknown_face)
 
-                    # Reset buffer so new ID gets tracked immediately
                     self.frame_buffer.clear()
                     self.frame_buffer.append(detected_uuid)
 
-        # Get stable consensus UUID
         stable_uuid = self.get_stable_face()
         current_time = time.time()
 
-        # NEW: Handle face change with 4-second confirmation
         if stable_uuid != self.current_face_uuid:
-            # If this is a new pending face, start tracking it
             if stable_uuid != self.pending_face_uuid:
                 self.pending_face_uuid = stable_uuid
                 self.pending_face_start_time = current_time
                 print(f"[PENDING] New face detected: {stable_uuid}, waiting {FACE_CHANGE_CONFIRMATION_TIME}s for confirmation...")
             
-            # Check if the pending face has been stable for 4 seconds
             elif self.pending_face_start_time is not None:
                 time_elapsed = current_time - self.pending_face_start_time
                 
@@ -321,13 +295,11 @@ class FaceTracker:
                     self.last_face_change_time = current_time
                     self.post_face_change(stable_uuid)
                     
-                    # Reset pending tracking
                     self.pending_face_uuid = None
                     self.pending_face_start_time = None
                 else:
                     print(f"[WAITING] Face {stable_uuid} stable for {time_elapsed:.1f}/{FACE_CHANGE_CONFIRMATION_TIME}s")
         else:
-            # If we're back to the current face, cancel any pending change
             if self.pending_face_uuid is not None:
                 print(f"[CANCELLED] Pending face change cancelled, back to {self.current_face_uuid}")
                 self.pending_face_uuid = None

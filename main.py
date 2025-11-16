@@ -65,29 +65,23 @@ def face_update():
     data = request.get_json()
     face_id = data.get("uuid", None)
 
-    # Convert empty string to None
     if face_id in ("", None):
         new_face = None
     else:
-        # Validate uuid format
         try:
             new_face = str(uuid.UUID(face_id))
         except Exception:
             return jsonify({"error": "invalid uuid"}), 400
 
     with LOCK:
-        # ---------------------------------------------------
         # CASE 1: Face appears
-        # ---------------------------------------------------
         if new_face and CURRENT_FACE is None:
             CURRENT_FACE = new_face
             FACE_START_TIME = time.time()
             print(f"[FACE APPEARED] {CURRENT_FACE} — starting recording")
             return jsonify({"active_face": CURRENT_FACE})
 
-        # ---------------------------------------------------
         # CASE 2: Face disappears
-        # ---------------------------------------------------
         if new_face is None and CURRENT_FACE is not None:
             face = CURRENT_FACE
             start_ts = FACE_START_TIME
@@ -98,7 +92,6 @@ def face_update():
 
             print(f"[FACE DISAPPEARED] {face} — saving audio")
 
-            # process asynchronously
             threading.Thread(
                 target=process_audio_capture,
                 args=(start_ts, end_ts, face),
@@ -107,15 +100,10 @@ def face_update():
 
             return jsonify({"active_face": None})
 
-        # ---------------------------------------------------
-        # CASE 3: Same face still present → nothing changes
-        # ---------------------------------------------------
         return jsonify({"active_face": CURRENT_FACE})
 
 
-# -------------------------------------------
-# BACKGROUND AUDIO PROCESSING
-# -------------------------------------------
+# Audio processing and Gemini analysis
 def process_audio_capture(start_ts, end_ts, face_id):
     duration = end_ts - start_ts
     pcm = audio.get_last(duration)
@@ -147,7 +135,6 @@ def process_audio_capture(start_ts, end_ts, face_id):
 
     analysis_raw = get_json_analysis(existing_list)
 
-    # Ensure we store a real dict, not a JSON string
     if isinstance(analysis_raw, str):
         try:
             analysis_json = json.loads(analysis_raw)

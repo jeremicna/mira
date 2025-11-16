@@ -208,7 +208,6 @@ body {
   position: relative; /* required for overlay */
 }
 
-/* 📌 DARKEN OVERLAY — ADDED */
 #glasselement .glass-container::before {
   content: "";
   position: absolute;
@@ -219,13 +218,11 @@ body {
   pointer-events: none;
 }
 
-/* 📌 Ensures content stays above overlay */
 #glasselement .glass-container > * {
   position: relative;
   z-index: 1;
 }
 
-/* Center the empty-state text nicely */
 #glasselement.empty .glass-container {
   display: flex;
   align-items: center;

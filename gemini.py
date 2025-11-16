@@ -4,7 +4,6 @@ import json
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-# Load .env
 load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY")
@@ -15,7 +14,7 @@ if not API_KEY:
 
 genai.configure(api_key=API_KEY)
 
-# --- SYSTEM PROMPT ---
+# SYSTEM PROMPT
 system_prompt = """You are a helpful assistant that analyzes conversation transcripts.
 Your goal is to extract key personal details, summarize the main topics discussed, provide a general overview of the other person's current state, and generate intelligent follow-up items for the next conversation.
 You will be given a user prompt containing the conversation, which is a list of 'segments' with 'speaker' and 'text'.
@@ -66,7 +65,6 @@ def get_json_analysis(conversation_list: list) -> str:
         print(f"Error creating model (check library version): {e}", file=sys.stderr)
         return None
 
-    # Create the user prompt with the ENTIRE array of transcripts
     user_prompt = (
         "Here are multiple conversation transcripts. "
         "Analyze them all together as one combined relationship/context: "
@@ -88,12 +86,11 @@ def get_json_analysis(conversation_list: list) -> str:
         return None
 
 
-# --- Standalone test block ---
+# Test block
 if __name__ == "__main__":
 
     print("--- Running gemini.py in standalone test mode ---", file=sys.stderr)
 
-    # TWO transcripts now
     test_conversation_data = [
         {
             "segments": [

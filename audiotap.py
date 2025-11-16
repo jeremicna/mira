@@ -16,7 +16,6 @@ class AudioTap:
         self.sample_rate = sample_rate
         self.channels = channels
 
-        # Correctly calculate buffer size for all channels
         self.buffer_samples = buffer_seconds * sample_rate * channels
         self.buffer = deque(maxlen=self.buffer_samples)
 
@@ -43,16 +42,13 @@ class AudioTap:
         """
         while self._running:
             try:
-                # ### CHANGE 1: Added rtsp_transport: "tcp" to match your ffplay command ###
-                # This is crucial for stability and avoiding packet loss over UDP.
+
                 options = {"rtsp_transport": "tcp"}
                 container = av.open(self.url, "r", options=options)
                 
-                # Find the audio stream. This works for Opus or any other codec.
                 audio_stream = next(s for s in container.streams if s.type == "audio")
 
                 resampler = av.audio.resampler.AudioResampler(
-                    # ### FIX 1: Resample to float32 to avoid clipping ###
                     format="flt",
                     layout="mono" if self.channels == 1 else "stereo",
                     rate=self.sample_rate
@@ -62,11 +58,8 @@ class AudioTap:
                     if not self._running:
                         break
 
-                    # PyAV decodes the Opus (or other) frame,
-                    # and the resampler converts it to our target format (48kHz float32)
                     out_frames = resampler.resample(frame)
 
-                    # Normalize to list
                     if not isinstance(out_frames, list):
                         out_frames = [out_frames]
 
@@ -74,8 +67,6 @@ class AudioTap:
                         if f is None:
                             continue
 
-                        # ### FIX 2: Store float32 samples directly ###
-                        # .to_ndarray() will now return float32
                         pcm = f.to_ndarray().reshape(-1)
                         self.buffer.extend(pcm)
 
@@ -90,12 +81,10 @@ class AudioTap:
         """
         Retrieve the last N seconds of audio as float32 PCM (Whisper-ready)
         """
-        # ### FIX 3: Get correct number of samples for all channels ###
         samples_needed = int(seconds * self.sample_rate * self.channels)
         if len(self.buffer) < samples_needed:
             return None
 
-        # ### FIX 4: Just grab float32 data. No conversion needed. ###
         data = np.array(list(self.buffer)[-samples_needed:], dtype=np.float32)
         return data
 
@@ -109,7 +98,6 @@ class AudioTap:
             print("AudioTap: invalid segment times.")
             return None
 
-        # Corrected index math
         try:
             total_samples = len(self.buffer)
             start_idx_ago = int(end_s * self.sample_rate * self.channels)
@@ -135,10 +123,8 @@ class AudioTap:
 
         container = av.open(path, mode="w")
 
-        # MP3 stream – DO NOT set channels/layout
         stream = container.add_stream("mp3", rate=self.sample_rate)
 
-        # Reshape for mono/stereo
         if self.channels == 1:
             pcm = pcm_int16.reshape(1, -1)
         else:
