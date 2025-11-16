@@ -29,8 +29,8 @@ Analyze all transcripts to:
 4. **Generate Action Items:** Create 2–3 brief follow-up questions or topics for the *next* call.
 
 You MUST respond with ONLY a single, valid inline JSON object. Do not include any other text, escape characters, markdown formatting, or explanations.
-
-Your output MUST strictly follow this exact JSON structure:
+You MUST populate the fields with real values as much as possible.
+Your output MUST strictly follow this exact JSON structure, and be similar in length to the example for each field:
 {
      "name": "Alice Clark",
      "occupation": "Teacher",
