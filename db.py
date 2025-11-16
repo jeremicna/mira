@@ -23,6 +23,7 @@ def lmdb_get_json(key: str):
         if not raw:
             return None
         try:
+            print("This has been completed")
             return json.loads(raw.decode())
         except:
             return None
