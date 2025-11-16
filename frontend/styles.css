@@ -124,7 +124,7 @@ body {
 .last-points-list li {
   font-size: 15px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1;
   letter-spacing: -0.2px;
   color: rgba(255, 255, 255, 0.75);
   padding: 8px 0 8px 20px;
@@ -151,7 +151,7 @@ body {
 .convo-points-list li {
   font-size: 15px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1;
   letter-spacing: -0.2px;
   color: rgba(255, 255, 255, 0.75);
   padding: 8px 0 8px 20px;
@@ -166,20 +166,21 @@ body {
   font-size: 14px;
   font-weight: 600;
 }
+
 /* The outer glass wrapper that will grow/shrink */
 #glasselement {
-  position: absolute; /* adjust as you like */
+  position: absolute;
   bottom: 40px;
   right: 40px;
 
-  transform-origin: bottom right; /* looks slick */
+  transform-origin: bottom right;
   transition: transform 0.35s ease, width 0.35s ease, height 0.35s ease;
 }
 
 /* Big, full card */
 #glasselement.full {
   width: 420px;
-  height: 420px; /* tweak to taste */
+  height: 420px;
   transform: scale(1);
 }
 
@@ -203,6 +204,25 @@ body {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+
+  position: relative; /* required for overlay */
+}
+
+/* 📌 DARKEN OVERLAY — ADDED */
+#glasselement .glass-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28); /* adjust darkness */
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 📌 Ensures content stays above overlay */
+#glasselement .glass-container > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Center the empty-state text nicely */

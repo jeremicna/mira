@@ -19,9 +19,6 @@ function renderEmptyState() {
 
   el.innerHTML = `
         <div class="glass-container empty">
-            <div class="empty-message">
-                No active face detected.
-            </div>
         </div>
     `;
 }

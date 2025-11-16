@@ -216,7 +216,7 @@
 	function createLiquidGlass() {
 		const shader = new Shader({
 			width: 400,
-			height: 550,
+			height: 600,
 			fragment: (uv, mouse) => {
 			  	const ix = uv.x - 0.5;
 				const iy = uv.y - 0.5;
