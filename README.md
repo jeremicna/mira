@@ -1,5 +1,5 @@
 # mira
-![Demo](./assets/logo.png)
+![Logo](./assets/logo.jpg)
 
 Mira is a real-time facial recognition based conversational intelligence engine.
 
